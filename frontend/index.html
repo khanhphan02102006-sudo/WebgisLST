@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebGIS LST - TP.HCM</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; font-family: Arial, sans-serif; background: #f4f6f8; }
+    body { overflow: hidden; }
+    .app { display: grid; grid-template-columns: 285px minmax(0, 1fr) 320px; height: 100vh; }
+    .sidebar, .rightbar { background: #fff; padding: 16px; overflow-y: auto; z-index: 1000; }
+    .sidebar { border-right: 1px solid #ddd; }
+    .rightbar { border-left: 1px solid #ddd; }
+    .title { font-size: 20px; font-weight: 700; margin-bottom: 4px; color: #16324f; }
+    .subtitle { font-size: 12px; color: #666; margin-bottom: 18px; }
+    label { display: block; font-size: 13px; font-weight: 600; margin: 11px 0 5px; }
+    select, button { width: 100%; padding: 9px 10px; border-radius: 7px; border: 1px solid #ccd3da; background: #fff; font-size: 14px; }
+    button { cursor: pointer; font-weight: 700; }
+    .btn-primary { background: #166534; color: white; border-color: #166534; margin-top: 14px; }
+    .btn-secondary { margin-top: 8px; }
+    .box { margin-top: 14px; border: 1px solid #dde3e8; border-radius: 9px; padding: 11px; background: #fafbfc; }
+    .box h3 { margin: 0 0 9px; font-size: 14px; }
+    .stat-row { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; font-size: 13px; border-bottom: 1px dashed #e4e7ea; }
+    .stat-row:last-child { border-bottom: 0; }
+    .value { font-weight: 700; }
+    #map { position: relative; width: 100%; height: 100vh; }
+    #map .leaflet-top.leaflet-left { top: 70px; }
+    .legend { line-height: 18px; color: #333; background: #fff; padding: 8px 10px; border-radius: 7px; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+    .legend .bar { width: 150px; height: 10px; background: linear-gradient(to right, #040274, #2c7bb6, #00a6ca, #00ccbc, #90eb9d, #ffff8c, #f9d057, #f29e2e, #e76818, #d7191c); margin: 5px 0; }
+    .status { font-size: 12px; color: #555; margin-top: 9px; min-height: 32px; }
+    .warn { color: #9a3412; }
+    .small { font-size: 11px; color: #6b7280; line-height: 1.45; }
+    canvas { max-width: 100%; }
+    @media (max-width: 1000px) {
+      .app { grid-template-columns: 240px minmax(0,1fr); }
+      .rightbar { display: none; }
+    }
+    @media (max-width: 720px) {
+      body { overflow: auto; }
+      .app { display: block; }
+      .sidebar { position: relative; height: auto; }
+      #map { height: 65vh; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="title">WebGIS LST</div>
+    <div class="subtitle">Nhiệt độ bề mặt đất — TP. Hồ Chí Minh</div>
+
+    <label for="yearSelect">Năm</label>
+    <select id="yearSelect"></select>
+
+    <label for="monthSelect">Tháng</label>
+    <select id="monthSelect"></select>
+
+    <label for="levelSelect">Phạm vi</label>
+    <select id="levelSelect">
+      <option value="city">Toàn TP.HCM</option>
+      <option value="ward">Phường/Xã</option>
+    </select>
+
+    <label for="areaSelect">Khu vực</label>
+    <select id="areaSelect" disabled>
+      <option value="">Toàn TP.HCM</option>
+    </select>
+
+    <button id="loadBtn" class="btn-primary">TẢI LST</button>
+    <button id="excelBtn" class="btn-secondary">XUẤT EXCEL</button>
+
+    <div class="box">
+      <h3>Thông tin xử lý</h3>
+      <div class="stat-row"><span>Thời gian xử lý</span><span class="value" id="processingTime">—</span></div>
+      <div class="stat-row"><span>Số ảnh Landsat</span><span class="value" id="imageCount">—</span></div>
+      <div class="stat-row"><span>Nguồn dữ liệu</span><span class="value">GEE</span></div>
+      <div class="small">Không khóa/clamp giá trị LST. Số liệu hiển thị lấy từ dữ liệu tính toán thực tế.</div>
+    </div>
+
+    <div class="status" id="status">Chọn phạm vi và bấm TẢI LST.</div>
+  </aside>
+
+  <main id="map"></main>
+
+  <aside class="rightbar">
+    <div class="box" style="margin-top:0">
+      <h3>Khu vực đang chọn</h3>
+      <div id="selectedArea">Toàn TP. Hồ Chí Minh</div>
+    </div>
+
+    <div class="box">
+      <h3>LST</h3>
+      <div class="stat-row"><span>Min</span><span class="value" id="lstMin">—</span></div>
+      <div class="stat-row"><span>Mean</span><span class="value" id="lstMean">—</span></div>
+      <div class="stat-row"><span>Max</span><span class="value" id="lstMax">—</span></div>
+    </div>
+
+    <div class="box">
+      <h3>Chuỗi thời gian 2017–2026</h3>
+      <canvas id="timeseriesChart"></canvas>
+    </div>
+
+    <div class="box">
+      <h3>Ghi chú</h3>
+      <div class="small">
+        TP.HCM hiện dùng mô hình chính quyền địa phương 2 cấp. Bộ lọc khu vực dùng các đơn vị cấp xã hiện hành (phường/xã/đặc khu), không dùng ranh giới quận/huyện cũ.
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const API = "http://127.0.0.1:8000";
+const map = L.map("map").setView([10.83, 106.72], 9);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(map);
+
+let lstLayer = null;
+let boundaryLayer = null;
+let chart = null;
+let currentResult = null;
+let wardNames = new Map();
+let boundaryCache = new Map();
+let currentBoundaryLevel = null;
+let timeseriesRequestToken = 0;
+
+const yearSelect = document.getElementById("yearSelect");
+const monthSelect = document.getElementById("monthSelect");
+const levelSelect = document.getElementById("levelSelect");
+const areaSelect = document.getElementById("areaSelect");
+const loadBtn = document.getElementById("loadBtn");
+const excelBtn = document.getElementById("excelBtn");
+
+for (let y = 2017; y <= 2026; y++) {
+  const option = document.createElement("option"); option.value = y; option.textContent = y; yearSelect.appendChild(option);
+}
+yearSelect.value = "2026";
+for (let m = 1; m <= 12; m++) {
+  const option = document.createElement("option"); option.value = m; option.textContent = `Tháng ${m}`; monthSelect.appendChild(option);
+}
+monthSelect.value = "1";
+
+function setStatus(text, warn=false) {
+  const el = document.getElementById("status");
+  el.textContent = text;
+  el.className = warn ? "status warn" : "status";
+}
+function fmt(v) { return v == null || Number.isNaN(Number(v)) ? "—" : `${Number(v).toFixed(2)} °C`; }
+
+async function loadAreas() {
+  const res = await fetch(`${API}/api/areas?level=ward`);
+  if (!res.ok) throw new Error(await res.text());
+  const items = await res.json();
+  areaSelect.innerHTML = "";
+  items.forEach(item => {
+    wardNames.set(item.code, item.name);
+    const option = document.createElement("option");
+    option.value = item.code;
+    option.textContent = `${item.type ? item.type + " " : ""}${item.name}`;
+    areaSelect.appendChild(option);
+  });
+}
+
+const hoverStatsCache = new Map();
+
+function wardStyle() {
+  return {
+    color: "#1f2937",
+    weight: 1,
+    fillColor: "#ffffff",
+    fillOpacity: 0.01
+  };
+}
+
+function wardHoverStyle() {
+  return {
+    color: "#111827",
+    weight: 3,
+    fillColor: "#facc15",
+    fillOpacity: 0.22
+  };
+}
+
+async function getHoverStats(code) {
+  const key = `${yearSelect.value}-${monthSelect.value}-${code}`;
+  if (hoverStatsCache.has(key)) return hoverStatsCache.get(key);
+
+  const url = `${API}/api/area-statistics?year=${yearSelect.value}&month=${monthSelect.value}&level=ward&area_code=${encodeURIComponent(code)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(await res.text());
+  const stats = await res.json();
+  hoverStatsCache.set(key, stats);
+  return stats;
+}
+
+async function loadBoundary(level) {
+  if (currentBoundaryLevel === level && boundaryLayer) return;
+  if (boundaryLayer) map.removeLayer(boundaryLayer);
+
+  let geojson = boundaryCache.get(level);
+  if (!geojson) {
+    const res = await fetch(`${API}/api/boundary?level=${encodeURIComponent(level)}`);
+    if (!res.ok) throw new Error(await res.text());
+    geojson = await res.json();
+    boundaryCache.set(level, geojson);
+  }
+
+  const baseStyle = level === "ward" ? wardStyle() : {
+    color: "#111827",
+    weight: 3,
+    fillColor: "transparent",
+    fillOpacity: 0
+  };
+
+  boundaryLayer = L.geoJSON(geojson, {
+    style: baseStyle,
+    onEachFeature: (feature, layer) => {
+      const props = feature.properties || {};
+      const code = props.code || feature.id || "";
+      const name = props.name || "Khu vực";
+      const type = props.type ? `${props.type} ` : "";
+
+      if (level === "ward") {
+        layer.bindTooltip(`${type}${name}<br><b>LST:</b> đang tải...`, {
+          sticky: true,
+          direction: "top",
+          opacity: 0.95
+        });
+
+        layer.on("mouseover", async () => {
+          layer.setStyle(wardHoverStyle());
+          if (layer.bringToFront) layer.bringToFront();
+
+          try {
+            const stats = await getHoverStats(code);
+            const html = `${type}${name}<br><b>LST:</b> ${fmt(stats.lst_mean_c)}`;
+            layer.setTooltipContent(html);
+            layer.openTooltip();
+          } catch (_) {
+            layer.setTooltipContent(`${type}${name}<br><b>LST:</b> không có dữ liệu`);
+            layer.openTooltip();
+          }
+        });
+
+        layer.on("mouseout", () => {
+          boundaryLayer.resetStyle(layer);
+        });
+
+        layer.on("click", async () => {
+          areaSelect.value = code;
+          document.getElementById("selectedArea").textContent = `${type}${name}`;
+          await loadLST(true);
+        });
+      } else {
+        layer.bindTooltip(name, { sticky: true });
+      }
+    }
+  }).addTo(map);
+  currentBoundaryLevel = level;
+}
+
+async function loadLST(fromClick=false) {
+  const started = performance.now();
+  const year = yearSelect.value;
+  const month = monthSelect.value;
+  const level = levelSelect.value;
+  const areaCode = level === "ward" ? areaSelect.value : "";
+
+  if (level === "ward" && !areaCode) {
+    setStatus("Hãy chọn một phường/xã.", true);
+    return;
+  }
+
+  setStatus("Đang lấy dữ liệu LST từ GEE...");
+  try {
+    const qs = new URLSearchParams({ year, month, level });
+    if (areaCode) qs.set("area_code", areaCode);
+    const res = await fetch(`${API}/api/lst?${qs}`);
+    if (!res.ok) throw new Error(await res.text());
+    const result = await res.json();
+    currentResult = result;
+
+    document.getElementById("lstMin").textContent = fmt(result.statistics.lst_min_c);
+    document.getElementById("lstMean").textContent = fmt(result.statistics.lst_mean_c);
+    document.getElementById("lstMax").textContent = fmt(result.statistics.lst_max_c);
+    document.getElementById("imageCount").textContent = result.statistics.image_count ?? "—";
+    document.getElementById("processingTime").textContent = `${((performance.now()-started)/1000).toFixed(2)} s`;
+
+    if (level === "city") {
+      document.getElementById("selectedArea").textContent = "Toàn TP. Hồ Chí Minh";
+    } else {
+      document.getElementById("selectedArea").textContent = wardNames.get(areaCode) || areaCode;
+    }
+
+    const tileUrl = result.map.tile_url;
+    if (lstLayer) map.removeLayer(lstLayer);
+    lstLayer = L.tileLayer(tileUrl, { opacity: 0.72, zIndex: 10 }).addTo(map);
+
+    await loadBoundary(level);
+    setStatus(`Đã cập nhật LST tháng ${month}/${year}. Đang cập nhật biểu đồ...`);
+    loadTimeseries(level, areaCode);
+
+  } catch (err) {
+    console.error(err);
+    setStatus(`Lỗi: ${err.message}`, true);
+  }
+}
+
+async function loadTimeseries(level, areaCode) {
+  const token = ++timeseriesRequestToken;
+  const qs = new URLSearchParams({ level });
+  if (areaCode) qs.set("area_code", areaCode);
+  try {
+    const res = await fetch(`${API}/api/area-timeseries?${qs}`);
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (token !== timeseriesRequestToken) return;
+  const labels = rows.map(r => r.date);
+  const values = rows.map(r => r.lst_mean_c == null ? null : Number(r.lst_mean_c));
+
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById("timeseriesChart"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{ label: "LST trung bình (°C)", data: values, borderWidth: 2, pointRadius: 2, tension: 0.2 }]
+    },
+    options: { responsive: true, scales: { y: { beginAtZero: false } } }
+  });
+  setStatus(`Đã cập nhật LST tháng ${monthSelect.value}/${yearSelect.value} và biểu đồ.`);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+levelSelect.addEventListener("change", async () => {
+  hoverStatsCache.clear();
+
+  if (levelSelect.value === "city") {
+    areaSelect.disabled = true;
+    areaSelect.innerHTML = '<option value="">Toàn TP.HCM</option>';
+    document.getElementById("selectedArea").textContent = "Toàn TP. Hồ Chí Minh";
+  } else {
+    areaSelect.disabled = false;
+    areaSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+    try {
+      await loadAreas();
+      areaSelect.selectedIndex = 0;
+    } catch (err) {
+      setStatus(`Không tải được danh sách phường/xã: ${err.message}`, true);
+    }
+    document.getElementById("selectedArea").textContent = "Chưa chọn phường/xã";
+  }
+
+  await loadBoundary(levelSelect.value);
+});
+
+areaSelect.addEventListener("change", () => {
+  if (levelSelect.value === "ward" && areaSelect.value) loadLST(true);
+});
+
+loadBtn.addEventListener("click", () => loadLST(false));
+
+excelBtn.addEventListener("click", () => {
+  if (!currentResult) {
+    setStatus("Chưa có dữ liệu để xuất Excel.", true);
+    return;
+  }
+  const stats = currentResult.statistics || {};
+  const rows = [{
+    Pham_vi: levelSelect.value === "city" ? "Toàn TP.HCM" : (wardNames.get(areaSelect.value) || areaSelect.value),
+    Nam: currentResult.year,
+    Thang: currentResult.month,
+    So_anh: stats.image_count,
+    LST_min_C: stats.lst_min_c,
+    LST_mean_C: stats.lst_mean_c,
+    LST_max_C: stats.lst_max_c
+  }];
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "LST");
+  XLSX.writeFile(wb, `LST_TPHCM_${currentResult.year}_${String(currentResult.month).padStart(2,'0')}.xlsx`);
+});
+
+(async function init() {
+  try {
+    await loadBoundary("city");
+    await loadAreas();
+    areaSelect.disabled = true;
+    areaSelect.innerHTML = '<option value="">Toàn TP.HCM</option>';
+  } catch (err) {
+    console.error(err);
+    setStatus(`Không tải được dữ liệu ranh giới: ${err.message}`, true);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,2626 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>LST WebGIS TP.HCM mới</title>
+
+
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+>
+
+
+<link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+>
+
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+
+html,
+body {
+
+    margin: 0;
+
+    width: 100%;
+
+    height: 100%;
+
+    overflow: hidden;
+
+    font-family:
+        Inter,
+        Arial,
+        sans-serif;
+
+    background:
+        #eef2f7;
+
+}
+
+
+.app {
+
+    width: 100vw;
+
+    height: 100vh;
+
+    display: grid;
+
+    grid-template-columns:
+        290px
+        minmax(0, 1fr)
+        360px;
+
+}
+
+
+/* =====================================================
+   LEFT
+===================================================== */
+
+.sidebar {
+
+    background:
+        white;
+
+    border-right:
+        1px solid #dfe5ec;
+
+    overflow-y: auto;
+
+}
+
+
+.brand {
+
+    padding:
+        22px 20px 16px;
+
+    border-bottom:
+        1px solid #edf0f4;
+
+}
+
+
+.brand-title {
+
+    font-size:
+        22px;
+
+    font-weight:
+        800;
+
+    color:
+        #0f172a;
+
+}
+
+
+.brand-subtitle {
+
+    margin-top:
+        5px;
+
+    font-size:
+        12px;
+
+    color:
+        #64748b;
+
+}
+
+
+.section {
+
+    padding:
+        18px;
+
+}
+
+
+.section-title {
+
+    margin-bottom:
+        10px;
+
+    font-size:
+        11px;
+
+    font-weight:
+        800;
+
+    text-transform:
+        uppercase;
+
+    color:
+        #64748b;
+
+}
+
+
+label {
+
+    display:
+        block;
+
+    margin-bottom:
+        6px;
+
+    font-size:
+        13px;
+
+    font-weight:
+        700;
+
+    color:
+        #334155;
+
+}
+
+
+select {
+
+    width:
+        100%;
+
+    margin-bottom:
+        13px;
+
+    padding:
+        11px 12px;
+
+    border:
+        1px solid #cbd5e1;
+
+    border-radius:
+        10px;
+
+    background:
+        white;
+
+    font-size:
+        13px;
+
+    color:
+        #0f172a;
+
+}
+
+
+button {
+
+    width:
+        100%;
+
+    padding:
+        12px 14px;
+
+    border-radius:
+        10px;
+
+    font-size:
+        13px;
+
+    font-weight:
+        800;
+
+    cursor:
+        pointer;
+
+}
+
+
+.primary {
+
+    border:
+        none;
+
+    background:
+        #2563eb;
+
+    color:
+        white;
+
+}
+
+
+.primary:hover {
+
+    background:
+        #1d4ed8;
+
+}
+
+
+.secondary {
+
+    margin-top:
+        9px;
+
+    border:
+        1px solid #cbd5e1;
+
+    background:
+        white;
+
+    color:
+        #334155;
+
+}
+
+
+.info-box {
+
+    margin:
+        0 18px 18px;
+
+    padding:
+        12px;
+
+    border:
+        1px solid #e2e8f0;
+
+    border-radius:
+        12px;
+
+    background:
+        #f8fafc;
+
+}
+
+
+.info-row {
+
+    display:
+        flex;
+
+    justify-content:
+        space-between;
+
+    gap:
+        10px;
+
+    padding:
+        6px 0;
+
+    border-bottom:
+        1px solid #e9eef4;
+
+    font-size:
+        11px;
+
+}
+
+
+.info-row:last-child {
+
+    border-bottom:
+        none;
+
+}
+
+
+.info-label {
+
+    color:
+        #64748b;
+
+}
+
+
+.info-value {
+
+    font-weight:
+        700;
+
+    color:
+        #0f172a;
+
+    text-align:
+        right;
+
+}
+
+
+.status {
+
+    margin:
+        auto 18px 18px;
+
+    padding:
+        10px 12px;
+
+    border-radius:
+        10px;
+
+    background:
+        #ecfdf5;
+
+    color:
+        #047857;
+
+    border:
+        1px solid #a7f3d0;
+
+    font-size:
+        11px;
+
+    font-weight:
+        700;
+
+}
+
+
+.status.error {
+
+    background:
+        #fef2f2;
+
+    color:
+        #b91c1c;
+
+    border-color:
+        #fecaca;
+
+}
+
+
+/* =====================================================
+   MAP
+===================================================== */
+
+.map-area {
+
+    position:
+        relative;
+
+    min-width:
+        0;
+
+}
+
+
+#map {
+
+    width:
+        100%;
+
+    height:
+        100%;
+
+}
+
+
+#map .leaflet-top.leaflet-left {
+
+    top:
+        68px;
+
+}
+
+
+.map-title {
+
+    position:
+        absolute;
+
+    top:
+        16px;
+
+    left:
+        18px;
+
+    z-index:
+        1000;
+
+    padding:
+        11px 15px;
+
+    border-radius:
+        11px;
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            .96
+        );
+
+    box-shadow:
+        0 4px 18px
+        rgba(
+            15,
+            23,
+            42,
+            .13
+        );
+
+}
+
+
+.map-title-main {
+
+    font-size:
+        14px;
+
+    font-weight:
+        800;
+
+}
+
+
+.map-title-sub {
+
+    margin-top:
+        3px;
+
+    font-size:
+        11px;
+
+    color:
+        #64748b;
+
+}
+
+
+.legend {
+
+    position:
+        absolute;
+
+    right:
+        18px;
+
+    bottom:
+        18px;
+
+    z-index:
+        1000;
+
+    width:
+        175px;
+
+    padding:
+        12px;
+
+    border-radius:
+        11px;
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            .96
+        );
+
+    box-shadow:
+        0 4px 18px
+        rgba(
+            15,
+            23,
+            42,
+            .13
+        );
+
+}
+
+
+.legend-title {
+
+    margin-bottom:
+        8px;
+
+    font-size:
+        12px;
+
+    font-weight:
+        800;
+
+}
+
+
+.gradient {
+
+    height:
+        12px;
+
+    border-radius:
+        4px;
+
+    background:
+        linear-gradient(
+            to right,
+            #040274,
+            #1b45a8,
+            #2c7bb6,
+            #00a6ca,
+            #00ccbc,
+            #90eb9d,
+            #ffff8c,
+            #f9d057,
+            #f29e2e,
+            #e85d25,
+            #c22e18,
+            #7a0403
+        );
+
+}
+
+
+.legend-labels {
+
+    display:
+        flex;
+
+    justify-content:
+        space-between;
+
+    margin-top:
+        5px;
+
+    font-size:
+        10px;
+
+    color:
+        #64748b;
+
+}
+
+
+/* =====================================================
+   RIGHT
+===================================================== */
+
+.results {
+
+    padding:
+        20px;
+
+    overflow-y:
+        auto;
+
+    background:
+        white;
+
+    border-left:
+        1px solid #dfe5ec;
+
+}
+
+
+.results-title {
+
+    font-size:
+        18px;
+
+    font-weight:
+        800;
+
+    color:
+        #0f172a;
+
+}
+
+
+.results-subtitle {
+
+    margin:
+        5px 0 17px;
+
+    font-size:
+        11px;
+
+    color:
+        #64748b;
+
+    line-height:
+        1.5;
+
+}
+
+
+.selected {
+
+    margin-bottom:
+        15px;
+
+    padding:
+        14px;
+
+    border:
+        1px solid #e2e8f0;
+
+    border-radius:
+        12px;
+
+    background:
+        #f8fafc;
+
+}
+
+
+.selected-label {
+
+    font-size:
+        10px;
+
+    font-weight:
+        800;
+
+    text-transform:
+        uppercase;
+
+    color:
+        #64748b;
+
+}
+
+
+.selected-name {
+
+    margin-top:
+        5px;
+
+    font-size:
+        19px;
+
+    font-weight:
+        800;
+
+    color:
+        #0f172a;
+
+}
+
+
+.selected-date {
+
+    margin-top:
+        4px;
+
+    font-size:
+        11px;
+
+    color:
+        #64748b;
+
+}
+
+
+.stats {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(
+            3,
+            1fr
+        );
+
+    gap:
+        8px;
+
+    margin-bottom:
+        15px;
+
+}
+
+
+.stat {
+
+    padding:
+        11px 7px;
+
+    border:
+        1px solid #e2e8f0;
+
+    border-radius:
+        11px;
+
+    text-align:
+        center;
+
+}
+
+
+.stat-title {
+
+    font-size:
+        9px;
+
+    font-weight:
+        700;
+
+    color:
+        #64748b;
+
+}
+
+
+.stat-value {
+
+    margin-top:
+        4px;
+
+    font-size:
+        17px;
+
+    font-weight:
+        800;
+
+}
+
+
+.hint {
+
+    padding:
+        18px 14px;
+
+    border:
+        1px dashed #cbd5e1;
+
+    border-radius:
+        12px;
+
+    background:
+        #fafcff;
+
+    font-size:
+        11px;
+
+    line-height:
+        1.6;
+
+    color:
+        #64748b;
+
+    text-align:
+        center;
+
+}
+
+
+.chart-box {
+
+    padding:
+        13px;
+
+    border:
+        1px solid #e2e8f0;
+
+    border-radius:
+        12px;
+
+}
+
+
+.chart-title {
+
+    margin-bottom:
+        10px;
+
+    font-size:
+        12px;
+
+    font-weight:
+        800;
+
+}
+
+
+.chart-wrap {
+
+    height:
+        270px;
+
+}
+
+
+@media (
+    max-width: 1100px
+) {
+
+    .app {
+
+        grid-template-columns:
+            250px
+            1fr;
+
+    }
+
+    .results {
+
+        display:
+            none;
+
+    }
+
+}
+
+
+@media (
+    max-width: 760px
+) {
+
+    body {
+
+        overflow:
+            auto;
+
+    }
+
+    .app {
+
+        display:
+            block;
+
+        height:
+            auto;
+
+    }
+
+    .map-area {
+
+        height:
+            65vh;
+
+    }
+
+    .results {
+
+        display:
+            block;
+
+        border-left:
+            none;
+
+        border-top:
+            1px solid
+            #dfe5ec;
+
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="app">
+
+
+<!-- =====================================================
+     SIDEBAR
+===================================================== -->
+
+<aside class="sidebar">
+
+
+    <div class="brand">
+
+        <div class="brand-title">
+            LST WebGIS
+        </div>
+
+        <div class="brand-subtitle">
+            Land Surface Temperature
+        </div>
+
+    </div>
+
+
+    <div class="section">
+
+        <div class="section-title">
+            Bộ lọc dữ liệu
+        </div>
+
+
+        <label>
+            Năm
+        </label>
+
+
+        <select id="yearSelect">
+
+            <option value="2017">2017</option>
+            <option value="2018">2018</option>
+            <option value="2019">2019</option>
+            <option value="2020">2020</option>
+            <option value="2021">2021</option>
+            <option value="2022">2022</option>
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+
+            <option
+                value="2026"
+                selected
+            >
+                2026
+            </option>
+
+        </select>
+
+
+        <label>
+            Tháng
+        </label>
+
+
+        <select id="monthSelect">
+
+            <option value="1">Tháng 1</option>
+            <option value="2">Tháng 2</option>
+            <option value="3">Tháng 3</option>
+            <option value="4">Tháng 4</option>
+            <option value="5">Tháng 5</option>
+            <option value="6">Tháng 6</option>
+            <option value="7">Tháng 7</option>
+            <option value="8">Tháng 8</option>
+            <option value="9">Tháng 9</option>
+            <option value="10">Tháng 10</option>
+            <option value="11">Tháng 11</option>
+            <option value="12">Tháng 12</option>
+
+        </select>
+
+
+        <label>
+            Khu vực
+        </label>
+
+
+        <select id="provinceSelect">
+
+            <option value="">
+                Chọn khu vực...
+            </option>
+
+        </select>
+
+
+        <button
+            id="loadBtn"
+            class="primary"
+        >
+            TẢI LST
+        </button>
+
+
+        <button
+            id="excelBtn"
+            class="secondary"
+        >
+            XUẤT EXCEL
+        </button>
+
+    </div>
+
+
+    <div class="info-box">
+
+        <div class="info-row">
+
+            <span class="info-label">
+                Khu vực
+            </span>
+
+            <span class="info-value">
+                TP.HCM mới
+            </span>
+
+        </div>
+
+
+        <div class="info-row">
+
+            <span class="info-label">
+                Phân tích
+            </span>
+
+            <span class="info-value">
+                Tỉnh/TP
+            </span>
+
+        </div>
+
+
+        <div class="info-row">
+
+            <span class="info-label">
+                Nguồn
+            </span>
+
+            <span class="info-value">
+                Google Earth Engine
+            </span>
+
+        </div>
+
+
+        <div class="info-row">
+
+            <span class="info-label">
+                Vệ tinh
+            </span>
+
+            <span class="info-value">
+                Landsat 8 / 9
+            </span>
+
+        </div>
+
+
+        <div class="info-row">
+
+            <span class="info-label">
+                Độ phân giải
+            </span>
+
+            <span class="info-value">
+                30 m
+            </span>
+
+        </div>
+
+
+        <div class="info-row">
+
+            <span class="info-label">
+                Thời gian
+            </span>
+
+            <span class="info-value">
+                2017–2026
+            </span>
+
+        </div>
+
+
+        <div class="info-row">
+
+            <span class="info-label">
+                Đơn vị
+            </span>
+
+            <span class="info-value">
+                °C
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="status"
+        class="status"
+    >
+        Đang khởi tạo...
+    </div>
+
+
+</aside>
+
+
+<!-- =====================================================
+     MAP
+===================================================== -->
+
+<main class="map-area">
+
+
+    <div class="map-title">
+
+        <div class="map-title-main">
+            LST TP.HCM mới
+        </div>
+
+        <div
+            id="mapTitleSub"
+            class="map-title-sub"
+        >
+            2026 - Tháng 1
+        </div>
+
+    </div>
+
+
+    <div id="map"></div>
+
+
+    <div class="legend">
+
+        <div class="legend-title">
+            LST (°C)
+        </div>
+
+        <div class="gradient"></div>
+
+        <div class="legend-labels">
+
+            <span>
+                20°C
+            </span>
+
+            <span>
+                50°C
+            </span>
+
+        </div>
+
+    </div>
+
+
+</main>
+
+
+<!-- =====================================================
+     RIGHT
+===================================================== -->
+
+<aside class="results">
+
+
+    <div class="results-title">
+        Kết quả phân tích
+    </div>
+
+
+    <div class="results-subtitle">
+        Rê chuột vào khu vực để xem LST.
+    </div>
+
+
+    <div class="selected">
+
+        <div class="selected-label">
+            Khu vực
+        </div>
+
+
+        <div
+            id="selectedName"
+            class="selected-name"
+        >
+            Chưa chọn
+        </div>
+
+
+        <div
+            id="selectedDate"
+            class="selected-date"
+        >
+            Hãy rê chuột vào khu vực
+        </div>
+
+    </div>
+
+
+    <div class="stats">
+
+
+        <div class="stat">
+
+            <div class="stat-title">
+                MIN
+            </div>
+
+            <div
+                id="minValue"
+                class="stat-value"
+            >
+                --
+            </div>
+
+        </div>
+
+
+        <div class="stat">
+
+            <div class="stat-title">
+                MEAN
+            </div>
+
+            <div
+                id="meanValue"
+                class="stat-value"
+            >
+                --
+            </div>
+
+        </div>
+
+
+        <div class="stat">
+
+            <div class="stat-title">
+                MAX
+            </div>
+
+            <div
+                id="maxValue"
+                class="stat-value"
+            >
+                --
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <div
+        id="hint"
+        class="hint"
+    >
+
+        Rê chuột vào một khu vực
+        <br>
+        để xem Min / Mean / Max.
+
+        <br><br>
+
+        Chọn khu vực để xem
+        <br>
+        chuỗi LST 2017–2026.
+
+    </div>
+
+
+    <div
+        id="chartBox"
+        class="chart-box"
+        style="display:none;"
+    >
+
+        <div class="chart-title">
+            Chuỗi LST 2017–2026
+        </div>
+
+
+        <div class="chart-wrap">
+
+            <canvas
+                id="lstChart"
+            ></canvas>
+
+        </div>
+
+    </div>
+
+
+</aside>
+
+
+</div>
+
+
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+></script>
+
+
+<script
+    src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"
+></script>
+
+
+<script
+    src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+></script>
+
+
+<script>
+
+
+const API =
+    "http://127.0.0.1:8000";
+
+
+let map;
+
+let lstLayer =
+    null;
+
+let boundaryLayer =
+    null;
+
+let chart =
+    null;
+
+let provinceData =
+    {};
+
+let provinceLayers =
+    {};
+
+let selectedProvince =
+    null;
+
+let selectedResult =
+    null;
+
+
+// ========================================================
+// DOM
+// ========================================================
+
+const yearSelect =
+    document.getElementById(
+        "yearSelect"
+    );
+
+
+const monthSelect =
+    document.getElementById(
+        "monthSelect"
+    );
+
+
+const provinceSelect =
+    document.getElementById(
+        "provinceSelect"
+    );
+
+
+const loadBtn =
+    document.getElementById(
+        "loadBtn"
+    );
+
+
+const excelBtn =
+    document.getElementById(
+        "excelBtn"
+    );
+
+
+const status =
+    document.getElementById(
+        "status"
+    );
+
+
+// ========================================================
+// HELPERS
+// ========================================================
+
+function year() {
+
+    return Number(
+        yearSelect.value
+    );
+
+}
+
+
+function month() {
+
+    return Number(
+        monthSelect.value
+    );
+
+}
+
+
+function setStatus(
+    text,
+    error = false
+) {
+
+    status.textContent =
+        text;
+
+    status.className =
+        error
+            ? "status error"
+            : "status";
+
+}
+
+
+function numberValue(
+    x
+) {
+
+    if (
+        x === null ||
+        x === undefined
+    ) {
+
+        return "--";
+
+    }
+
+
+    return Number(
+        x
+    ).toFixed(2);
+
+}
+
+
+// ========================================================
+// INIT MAP
+// ========================================================
+
+function initMap() {
+
+    map =
+        L.map(
+            "map",
+            {
+                zoomControl:
+                    true
+            }
+        );
+
+
+    L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+
+            maxZoom:
+                19,
+
+            attribution:
+                "&copy; OpenStreetMap contributors"
+
+        }
+    ).addTo(
+        map
+    );
+
+
+    map.setView(
+        [
+            10.75,
+            106.85
+        ],
+        9
+    );
+
+}
+
+
+// ========================================================
+// LOAD LST
+// ========================================================
+
+async function loadLST() {
+
+    setStatus(
+        "Đang tải LST..."
+    );
+
+
+    try {
+
+        const response =
+            await fetch(
+
+                `${API}/api/lst?year=${year()}&month=${month()}`
+
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (lstLayer) {
+
+            map.removeLayer(
+                lstLayer
+            );
+
+        }
+
+
+        lstLayer =
+            L.tileLayer(
+                data.tile_url,
+                {
+
+                    opacity:
+                        0.78,
+
+                    attribution:
+                        data.attribution
+
+                }
+            );
+
+
+        lstLayer.addTo(
+            map
+        );
+
+
+        document.getElementById(
+            "mapTitleSub"
+        ).textContent =
+            `${year()} - Tháng ${month()}`;
+
+
+        setStatus(
+            `Đã tải LST ${year()} - Tháng ${month()}`
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            error
+        );
+
+
+        setStatus(
+            `Lỗi LST: ${error.message}`,
+            true
+        );
+
+        throw error;
+
+    }
+
+}
+
+
+// ========================================================
+// STYLE
+// ========================================================
+
+function normalStyle() {
+
+    return {
+
+        color:
+            "#334155",
+
+        weight:
+            2,
+
+        fillColor:
+            "#ffffff",
+
+        fillOpacity:
+            0.04
+
+    };
+
+}
+
+
+function hoverStyle() {
+
+    return {
+
+        color:
+            "#111827",
+
+        weight:
+            4,
+
+        fillColor:
+            "#60a5fa",
+
+        fillOpacity:
+            0.28
+
+    };
+
+}
+
+
+function selectedStyle() {
+
+    return {
+
+        color:
+            "#2563eb",
+
+        weight:
+            4,
+
+        fillColor:
+            "#93c5fd",
+
+        fillOpacity:
+            0.30
+
+    };
+
+}
+
+
+// ========================================================
+// LOAD BOUNDARY
+// ========================================================
+
+async function loadBoundary() {
+
+    setStatus(
+        "Đang tải ranh giới..."
+    );
+
+
+    const response =
+        await fetch(
+            `${API}/api/boundary`
+        );
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            `HTTP ${response.status}`
+        );
+
+    }
+
+
+    const geojson =
+        await response.json();
+
+
+    if (boundaryLayer) {
+
+        map.removeLayer(
+            boundaryLayer
+        );
+
+    }
+
+
+    provinceLayers =
+        {};
+
+
+    boundaryLayer =
+        L.geoJSON(
+            geojson,
+            {
+
+                style:
+                    normalStyle,
+
+                onEachFeature:
+                    setupProvince
+
+            }
+        );
+
+
+    boundaryLayer.addTo(
+        map
+    );
+
+
+    const bounds =
+        boundaryLayer.getBounds();
+
+
+    if (
+        bounds.isValid()
+    ) {
+
+        map.fitBounds(
+            bounds,
+            {
+                padding:
+                    [
+                        30,
+                        30
+                    ]
+            }
+        );
+
+    }
+
+
+    provinceSelect.innerHTML =
+        "";
+
+
+    const first =
+        document.createElement(
+            "option"
+        );
+
+
+    first.value =
+        "";
+
+
+    first.textContent =
+        "Chọn khu vực...";
+
+
+    provinceSelect.appendChild(
+        first
+    );
+
+
+    for (
+        const feature
+        of geojson.features
+    ) {
+
+        const props =
+            feature.properties;
+
+
+        const option =
+            document.createElement(
+                "option"
+            );
+
+
+        option.value =
+            props.ADM1_NAME;
+
+
+        option.textContent =
+            props.display_name;
+
+
+        provinceSelect.appendChild(
+            option
+        );
+
+    }
+
+
+    setStatus(
+        "Đã tải ranh giới"
+    );
+
+}
+
+
+// ========================================================
+// PROVINCE EVENTS
+// ========================================================
+
+function setupProvince(
+    feature,
+    layer
+) {
+
+    const props =
+        feature.properties;
+
+
+    const province =
+        props.ADM1_NAME;
+
+
+    const name =
+        props.display_name;
+
+
+    provinceLayers[
+        province
+    ] = layer;
+
+
+    layer.on(
+        "mouseover",
+        async function() {
+
+            layer.setStyle(
+                hoverStyle()
+            );
+
+
+            layer.bringToFront();
+
+
+            await showProvince(
+                province,
+                name
+            );
+
+        }
+    );
+
+
+    layer.on(
+        "mouseout",
+        function() {
+
+            if (
+                selectedProvince !==
+                province
+            ) {
+
+                layer.setStyle(
+                    normalStyle()
+                );
+
+            }
+
+        }
+    );
+
+
+    layer.on(
+        "click",
+        async function() {
+
+            provinceSelect.value =
+                province;
+
+
+            await selectProvince(
+                province,
+                layer,
+                name
+            );
+
+        }
+    );
+
+}
+
+
+// ========================================================
+// LOAD PROVINCE STATISTICS
+// ========================================================
+
+async function loadProvinceStatistics() {
+
+    const response =
+        await fetch(
+
+            `${API}/api/province-statistics?year=${year()}&month=${month()}`
+
+        );
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            `HTTP ${response.status}`
+        );
+
+    }
+
+
+    const result =
+        await response.json();
+
+
+    if (!result.success) {
+
+        throw new Error(
+            "API trả về lỗi"
+        );
+
+    }
+
+
+    provinceData =
+        {};
+
+
+    for (
+        const item
+        of result.data
+    ) {
+
+        provinceData[
+            item.province
+        ] =
+            item;
+
+    }
+
+}
+
+
+// ========================================================
+// SHOW PROVINCE
+// ========================================================
+
+async function showProvince(
+    province,
+    name
+) {
+
+    const stats =
+        provinceData[
+            province
+        ];
+
+
+    document.getElementById(
+        "selectedName"
+    ).textContent =
+        name;
+
+
+    document.getElementById(
+        "selectedDate"
+    ).textContent =
+        `Tháng ${month()} / ${year()}`;
+
+
+    if (!stats) {
+
+        document.getElementById(
+            "minValue"
+        ).textContent =
+            "--";
+
+        document.getElementById(
+            "meanValue"
+        ).textContent =
+            "--";
+
+        document.getElementById(
+            "maxValue"
+        ).textContent =
+            "--";
+
+        return;
+
+    }
+
+
+    document.getElementById(
+        "minValue"
+    ).textContent =
+        numberValue(
+            stats.lst_min_c
+        );
+
+
+    document.getElementById(
+        "meanValue"
+    ).textContent =
+        numberValue(
+            stats.lst_mean_c
+        );
+
+
+    document.getElementById(
+        "maxValue"
+    ).textContent =
+        numberValue(
+            stats.lst_max_c
+        );
+
+}
+
+
+// ========================================================
+// SELECT PROVINCE
+// ========================================================
+
+async function selectProvince(
+    province,
+    layer,
+    name
+) {
+
+    selectedProvince =
+        province;
+
+
+    selectedResult =
+        null;
+
+
+    Object.entries(
+        provinceLayers
+    ).forEach(
+        function([
+            key,
+            currentLayer
+        ]) {
+
+            currentLayer.setStyle(
+
+                key === province
+                    ? selectedStyle()
+                    : normalStyle()
+
+            );
+
+        }
+    );
+
+
+    map.fitBounds(
+        layer.getBounds(),
+        {
+            padding:
+                [
+                    60,
+                    60
+                ],
+            maxZoom:
+                11
+        }
+    );
+
+
+    await showProvince(
+        province,
+        name
+    );
+
+
+    await loadProvinceTimeseries(
+        province,
+        name
+    );
+
+}
+
+
+// ========================================================
+// TIMESERIES
+// ========================================================
+
+async function loadProvinceTimeseries(
+    province,
+    name
+) {
+
+    try {
+
+        const response =
+            await fetch(
+
+                `${API}/api/province-timeseries?province=${encodeURIComponent(province)}&month=${month()}`
+
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+
+        }
+
+
+        const result =
+            await response.json();
+
+
+        if (!result.success) {
+
+            throw new Error(
+                "API trả về lỗi"
+            );
+
+        }
+
+
+        selectedResult = {
+
+            province:
+                province,
+
+            name:
+                name,
+
+            statistics:
+                provinceData[
+                    province
+                ],
+
+            timeseries:
+                result.data
+
+        };
+
+
+        drawChart(
+            name,
+            result.data
+        );
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            error
+        );
+
+
+        setStatus(
+            `Lỗi timeseries: ${error.message}`,
+            true
+        );
+
+    }
+
+}
+
+
+// ========================================================
+// CHART
+// ========================================================
+
+function drawChart(
+    name,
+    data
+) {
+
+    document.getElementById(
+        "hint"
+    ).style.display =
+        "none";
+
+
+    document.getElementById(
+        "chartBox"
+    ).style.display =
+        "block";
+
+
+    if (chart) {
+
+        chart.destroy();
+
+    }
+
+
+    chart =
+        new Chart(
+            document.getElementById(
+                "lstChart"
+            ),
+            {
+
+                type:
+                    "line",
+
+                data: {
+
+                    labels:
+                        data.map(
+                            item =>
+                                item.year
+                        ),
+
+                    datasets: [
+
+                        {
+
+                            label:
+                                `LST ${name}`,
+
+                            data:
+                                data.map(
+                                    item =>
+                                        item.lst_c
+                                ),
+
+                            tension:
+                                0.25,
+
+                            spanGaps:
+                                true,
+
+                            borderWidth:
+                                2,
+
+                            pointRadius:
+                                3
+
+                        }
+
+                    ]
+
+                },
+
+                options: {
+
+                    responsive:
+                        true,
+
+                    maintainAspectRatio:
+                        false,
+
+                    interaction: {
+
+                        intersect:
+                            false,
+
+                        mode:
+                            "index"
+
+                    },
+
+                    scales: {
+
+                        x: {
+
+                            title: {
+
+                                display:
+                                    true,
+
+                                text:
+                                    "Năm"
+
+                            }
+
+                        },
+
+                        y: {
+
+                            beginAtZero:
+                                false,
+
+                            title: {
+
+                                display:
+                                    true,
+
+                                text:
+                                    "LST (°C)"
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+        );
+
+}
+
+
+// ========================================================
+// DROPDOWN
+// ========================================================
+
+provinceSelect.addEventListener(
+    "change",
+    async function() {
+
+        const province =
+            provinceSelect.value;
+
+
+        if (!province) {
+
+            return;
+
+        }
+
+
+        const layer =
+            provinceLayers[
+                province
+            ];
+
+
+        if (!layer) {
+
+            return;
+
+        }
+
+
+        const name =
+            layer.feature
+                .properties
+                .display_name;
+
+
+        await selectProvince(
+            province,
+            layer,
+            name
+        );
+
+    }
+);
+
+
+// ========================================================
+// LOAD
+// ========================================================
+
+loadBtn.addEventListener(
+    "click",
+    async function() {
+
+        try {
+
+            selectedProvince =
+                null;
+
+            selectedResult =
+                null;
+
+            provinceData =
+                {};
+
+
+            document.getElementById(
+                "selectedName"
+            ).textContent =
+                "Chưa chọn";
+
+
+            document.getElementById(
+                "selectedDate"
+            ).textContent =
+                "Hãy rê chuột vào khu vực";
+
+
+            document.getElementById(
+                "minValue"
+            ).textContent =
+                "--";
+
+
+            document.getElementById(
+                "meanValue"
+            ).textContent =
+                "--";
+
+
+            document.getElementById(
+                "maxValue"
+            ).textContent =
+                "--";
+
+
+            document.getElementById(
+                "hint"
+            ).style.display =
+                "block";
+
+
+            document.getElementById(
+                "chartBox"
+            ).style.display =
+                "none";
+
+
+            if (chart) {
+
+                chart.destroy();
+
+                chart = null;
+
+            }
+
+
+            await loadLST();
+
+            await loadProvinceStatistics();
+
+        }
+
+        catch (error) {
+
+            console.error(
+                error
+            );
+
+            setStatus(
+                `Lỗi: ${error.message}`,
+                true
+            );
+
+        }
+
+    }
+);
+
+
+// ========================================================
+// EXCEL
+// ========================================================
+
+excelBtn.addEventListener(
+    "click",
+    function() {
+
+        if (
+            !selectedResult
+        ) {
+
+            alert(
+                "Hãy chọn một khu vực trước."
+            );
+
+            return;
+
+        }
+
+
+        const stats =
+            selectedResult.statistics;
+
+
+        const data =
+            selectedResult.timeseries;
+
+
+        const summary = [
+
+            {
+
+                "Khu vực":
+                    selectedResult.name,
+
+                "Năm":
+                    stats.year,
+
+                "Tháng":
+                    stats.month,
+
+                "Số ảnh":
+                    stats.image_count,
+
+                "LST Min (°C)":
+                    stats.lst_min_c,
+
+                "LST Mean (°C)":
+                    stats.lst_mean_c,
+
+                "LST Max (°C)":
+                    stats.lst_max_c
+
+            }
+
+        ];
+
+
+        const timeseries =
+            data.map(
+                item => ({
+
+                    "Năm":
+                        item.year,
+
+                    "Tháng":
+                        item.month,
+
+                    "LST Mean (°C)":
+                        item.lst_c,
+
+                    "Số ảnh":
+                        item.image_count
+
+                })
+            );
+
+
+        const workbook =
+            XLSX.utils.book_new();
+
+
+        XLSX.utils.book_append_sheet(
+            workbook,
+
+            XLSX.utils.json_to_sheet(
+                summary
+            ),
+
+            "LST Statistics"
+        );
+
+
+        XLSX.utils.book_append_sheet(
+            workbook,
+
+            XLSX.utils.json_to_sheet(
+                timeseries
+            ),
+
+            "TimeSeries"
+        );
+
+
+        XLSX.writeFile(
+            workbook,
+            "LST_TPHCM.xlsx"
+        );
+
+    }
+);
+
+
+// ========================================================
+// START
+// ========================================================
+
+async function startApp() {
+
+    try {
+
+        initMap();
+
+        await loadLST();
+
+        await loadBoundary();
+
+        await loadProvinceStatistics();
+
+
+        setStatus(
+            "WebGIS đã sẵn sàng"
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            error
+        );
+
+
+        setStatus(
+            `Lỗi khởi động: ${error.message}`,
+            true
+        );
+
+    }
+
+}
+
+
+startApp();
+
+</script>
+
+
+</body>
+
+</html>
